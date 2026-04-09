@@ -5,12 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Send, Loader2 } from "lucide-react";
 import { Section, SectionHeader, FadeIn } from "@/components/ui";
 import { contactInfo, insuranceTypes } from "@/lib/data";
-import emailjs from "@emailjs/browser";
-
-const EMAILJS_SERVICE_ID  = "service_juag3jt";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
-
 
 interface FormData {
   name: string;
@@ -30,7 +24,7 @@ const initialForm: FormData = {
 
 export default function ContactSection() {
   const [form, setForm] = useState<FormData>(initialForm);
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error" >("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   const validate = (): boolean => {
@@ -45,32 +39,44 @@ export default function ContactSection() {
     return Object.keys(newErrors).length === 0;
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setStatus("loading");
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validate()) return;
 
-    try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        {
-          from_name:      form.name,
-          from_email:     form.email, 
-          phone:          form.phone,
-          insurance_type: form.insuranceType,
-          message:        form.message || "Aucun message",
+  setStatus("loading");
+
+  try {
+    const response = await fetch(
+      "https://formsubmit.co/ajax/fatimazahra.jdidi@alm-assurances.fr",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        EMAILJS_PUBLIC_KEY
-      );
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          insuranceType: form.insuranceType,
+          message: form.message,
+          _subject: "Nouveau devis AssurPro",
+        }),
+      }
+    );
+
+    if (response.ok) {
       setStatus("success");
       setForm(initialForm);
-    } catch (err) {
-      console.error("EmailJS error:", err);
-      setStatus("error");
+    } else {
+      alert("Erreur lors de l'envoi ❌");
+      setStatus("idle");
     }
-  }; 
-
+  } catch (error) {
+    alert("Erreur réseau ❌");
+    setStatus("idle");
+  }
+};
   const inputBase =
     "w-full px-4 py-3.5 rounded-xl border bg-white text-gray-800 placeholder:text-gray-400 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400";
   const inputNormal = "border-gray-200 hover:border-gray-300";
@@ -90,7 +96,6 @@ export default function ContactSection() {
         <div className="grid lg:grid-cols-5 gap-12 items-start">
           {/* Contact info */}
           <FadeIn className="lg:col-span-2 space-y-6" direction="right">
-            {/* Info cards */}
             {contactInfo.map((item) => (
               <a
                 key={item.label}
@@ -165,6 +170,7 @@ export default function ContactSection() {
                           Nom complet *
                         </label>
                         <input
+                        name = "name"
                           type="text"
                           placeholder="Jean Dupont"
                           value={form.name}
@@ -184,6 +190,7 @@ export default function ContactSection() {
                           Email *
                         </label>
                         <input
+                        name="email"
                           type="email"
                           placeholder="jean@exemple.fr"
                           value={form.email}
@@ -203,6 +210,7 @@ export default function ContactSection() {
                           Téléphone *
                         </label>
                         <input
+                        name="phone"
                           type="tel"
                           placeholder="06 12 34 56 78"
                           value={form.phone}
@@ -222,6 +230,7 @@ export default function ContactSection() {
                           Type d&apos;assurance *
                         </label>
                         <select
+                        name="insuranceType"
                           value={form.insuranceType}
                           onChange={(e) =>
                             setForm({ ...form, insuranceType: e.target.value })
@@ -251,6 +260,7 @@ export default function ContactSection() {
                         Précisez vos besoins (optionnel)
                       </label>
                       <textarea
+                      name="message"
                         rows={4}
                         placeholder="Décrivez votre situation et vos attentes..."
                         value={form.message}
